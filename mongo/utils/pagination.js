@@ -33,7 +33,7 @@
  *     nextCursor: "...",    // token for next page (cursor mode)
  *     prevCursor: "..."     // token for previous page (cursor mode)
  *   },
- *   // Top-level aliases for direct access & backward compatibility
+ *   // Top-level aliases for direct access and backward compatibility
  *   total: 100,
  *   page: 1,
  *   limit: 20,
@@ -217,7 +217,7 @@ export async function paginateOffset({
 
   // Execute query and count concurrently if countExecutor available
   const promises = [
-    executor({ filter, sort: sortSpec, limit, skip: offset }),
+    executor({ filter, sort: sortSpec, limit, skip: offset, maxLimit: MAX_LIMIT }),
   ];
 
   const shouldCount = typeof precomputedTotal !== "number" && typeof countExecutor === "function";

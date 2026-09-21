@@ -104,6 +104,10 @@ export const getCourses = async (req, res) => {
       if (!categoryDoc) return res.status(404).json({ success: false, message: "Category not found" });
       filter.categoryRef = categoryDoc._id;
     }
+
+    const PAGE_SIZE_MAX = 100;
+    const PAGE_SIZE_DEFAULT = 20;
+
     const pageParam = req.query.page ? parseInt(req.query.page, 10) : null;
     const limitParam = req.query.limit ? parseInt(req.query.limit, 10) : null;
     const isPaginated = pageParam !== null || limitParam !== null;
@@ -113,7 +117,7 @@ export const getCourses = async (req, res) => {
 
     if (isPaginated) {
       const page = Math.max(pageParam || 1, 1);
-      const limit = Math.min(Math.max(limitParam || 20, 1), 100);
+      const limit = Math.min(Math.max(limitParam || PAGE_SIZE_DEFAULT, 1), PAGE_SIZE_MAX);
       const skip = (page - 1) * limit;
 
       const [courses, total] = await Promise.all([
@@ -199,11 +203,46 @@ export const getCoursesByUser = async (req, res) => {
         .json({ success: false, message: "Invalid user ID format" });
     }
 
+    const PAGE_SIZE_MAX = 100;
+    const PAGE_SIZE_DEFAULT = 20;
+
+    const pageParam = req.query.page ? parseInt(req.query.page, 10) : null;
+    const limitParam = req.query.limit ? parseInt(req.query.limit, 10) : null;
+    const isPaginated = pageParam !== null || limitParam !== null;
+
+    const selectFields =
+      "_id title description category categoryRef thumbnail price currency views rating numReviews createdBy status publishedAt createdAt updatedAt";
+
+    if (isPaginated) {
+      const page = Math.max(pageParam || 1, 1);
+      const limit = Math.min(Math.max(limitParam || PAGE_SIZE_DEFAULT, 1), PAGE_SIZE_MAX);
+      const skip = (page - 1) * limit;
+
+      const [courses, total] = await Promise.all([
+        Course.find({ createdBy })
+          .select(selectFields)
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(limit)
+          .populate("createdBy", "name avatar bio")
+          .lean(),
+        Course.countDocuments({ createdBy }),
+      ]);
+
+      const hasMore = skip + courses.length < total;
+      return res.status(200).json({
+        success: true,
+        page,
+        limit,
+        total,
+        hasMore,
+        data: courses,
+      });
+    }
+
     logger.info("✅ Finding courses...");
     const courses = await Course.find({ createdBy })
-      .select(
-        "_id title description category categoryRef thumbnail price currency views rating numReviews createdBy status publishedAt createdAt updatedAt"
-      )
+      .select(selectFields)
       .sort({ createdAt: -1 })
       .populate("createdBy", "name avatar bio")
       .lean();

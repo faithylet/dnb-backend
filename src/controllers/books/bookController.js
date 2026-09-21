@@ -138,7 +138,7 @@ export const getBooks = async (req, res) => {
 
     if (isPaginated) {
       const page = Math.max(pageParam || 1, 1);
-      const limit = Math.min(Math.max(limitParam || 20, 1), 100);
+      const limit = Math.min(Math.max(limitParam || 20, 1), 50);
       const skip = (page - 1) * limit;
 
       const [books, total] = await Promise.all([
@@ -156,6 +156,7 @@ export const getBooks = async (req, res) => {
       const hasMore = skip + books.length < total;
       return res.status(200).json({
         success: true,
+        pagination: { page, limit, total, hasMore },
         page,
         limit,
         total,
@@ -205,11 +206,32 @@ export const getBooksByAuthor = async (req, res) => {
     }
     const selectFields =
       "_id title author category categoryRef price currency readCount rating numReviews description image audioFileUrl duration createdAt updatedAt";
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 20, 1), 50);
+    const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+    const skip = (page - 1) * limit;
+
     const books = await Book.find({ author: authorId })
       .select(selectFields)
       .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
       .populate("author", "name avatar bio")
       .lean();
+
+    const total = await Book.countDocuments({ author: authorId });
+    const hasMore = skip + books.length < total;
+
+    res.status(200).json({
+      success: true,
+      pagination: { page, limit, total, hasMore },
+      data: books,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// delete book by id
     // An empty result set is a successful query, not a failure.
     res.status(200).json({ success: true, data: books || [] });
   } catch (error) {
@@ -405,7 +427,7 @@ export const fetchRecommendedBooks = async (req, res) => {
         .select(selectFields)
         .populate("author", "name email avatar bio")
         .sort({ readCount: -1 })
-        .limit(10)
+        .limit(50)
         .lean();
 
       return res.status(200).json({

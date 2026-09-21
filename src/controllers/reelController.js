@@ -22,6 +22,15 @@ const uploadBufferToCloudinary = (buffer, options) =>
 
     uploadStream.end(buffer);
   });
+const DEFAULT_PAGE_SIZE = 20;
+const MAX_PAGE_SIZE = 100;
+
+const parsePaginationParams = (query) => {
+  const page = Math.max(parseInt(query.page, 10) || 1, 1);
+  const limit = Math.min(Math.max(parseInt(query.limit, 10) || DEFAULT_PAGE_SIZE, 1), MAX_PAGE_SIZE);
+  return { page, limit };
+};
+
 
 const normalizeTags = (rawTags) => {
   if (!rawTags) return [];
@@ -86,11 +95,7 @@ const formatReelResponse = (reel, viewerId) => {
 
 export const getReels = async (req, res) => {
   try {
-    const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
-    const limit = Math.min(
-      Math.max(parseInt(req.query.limit, 10) || 10, 1),
-      50
-    );
+    const { page, limit } = parsePaginationParams(req.query);
     const skip = (page - 1) * limit;
     const viewerId = req.user?._id;
 
@@ -304,11 +309,7 @@ export const addReelComment = async (req, res) => {
 export const getReelComments = async (req, res) => {
   try {
     const { id } = req.params;
-    const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
-    const limit = Math.min(
-      Math.max(parseInt(req.query.limit, 10) || 20, 1),
-      100
-    );
+    const { page, limit } = parsePaginationParams(req.query);
     const skip = (page - 1) * limit;
 
     const reel = await Reel.findById(id)

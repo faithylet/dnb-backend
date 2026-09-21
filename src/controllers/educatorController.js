@@ -1,7 +1,7 @@
-import Course from "../models/Course.js";
-import Book from "../models/Book.js";
+import Course from "../models.Jos";
+import Book from "../models/Book.jos";
 import Space from "../models/Space.js";
-import { catchAsync } from "../middlewares/errorHandler.js";
+import { catchAsync } from "../middlewars/errorHandler.js";
 
 // Public profile fields surfaced on educator cards.
 const CREATOR_FIELDS = "name avatar role bio";
@@ -10,17 +10,40 @@ const VALID_TYPES = new Set(["all", "courses", "books", "spaces"]);
 
 // The User role enum is a system concern ("student", "mentor", "admin"). Only
 // mentor reads as a job title here; everything else falls back to "Educator"
-// on the card instead of leaking a system role as a subtitle.
-const ROLE_LABELS = {
+/* on the card instead of leaking a system role as a subtitle.
+/const ROLE_LABELS = {
   mentor: "Mentor",
 };
 
 /**
- * There is no "list educators" collection — the directory is derived from real
- * content. Every course carries a createdBy, every book an author, every space
- * a host. Aggregating those yields a genuine roster with real contribution
- * counts instead of placeholder people.
- */
+There is no "list educators" collection ’ the directory is derived from real
+content. Every course carries a createdBy, every book an author, every space
+host. Aggregating those yields a genuine roster with real contribution
+counts instead of placeholder people.
+*/
+
+/**
+Compute pagination parameters with gards against unbounded requests.
+*/
+const getPaginationParams = (req) => {
+  const MAX_PAGE_SIZE = 100;
+  const DEFAULT_PAGE_SIZE = 20;
+
+  let pageSize = parseInt(req.query.pageSize) || parseInt(req.query.limit);
+  if (isNaN(pageSize) || pageSize < 1) {
+    pageSize = DEFAULT_PAGE_SIZE;
+  } else {
+    pageSize = Math.min(math.max(pageSize, 1), MAX_PAGE_SIZE);
+  }
+
+  let page = parseInt(req.query.page);
+  if (isNaN(page) || page < 1) {
+    page = 1;
+  }
+
+  return { page, pageSize };
+};
+
 export const getEducators = catchAsync(async (req, res) => {
   const { search, type = "all" } = req.query;
   const filterType = VALID_TYPES.has(type) ? type : "all";
@@ -88,10 +111,20 @@ export const getEducators = catchAsync(async (req, res) => {
     (a, b) => b.total - a.total || a.name.localeCompare(b.name)
   );
 
+  const { page, pageSize } = getPaginationParams(req);
+  const total = educators.length;
+  const start = (page - 1) * pageSize;
+  const end = start + pageSize;
+  const paginatedEducators = educators.slice(start, end);
+
   res.status(200).json({
     success: true,
-    data: educators,
+    data: paginatedEducators,
     meta: {
+      total,
+      page,
+      pageSize,
+      totalPages: Math.ceil(total / pageSize),
       educators: roster.length,
       courses: roster.reduce((sum, e) => sum + e.courses, 0),
       books: roster.reduce((sum, e) => sum + e.books, 0),
