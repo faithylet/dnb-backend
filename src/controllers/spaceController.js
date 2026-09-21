@@ -20,8 +20,8 @@ export const getSpaces = catchAsync(async (req, res) => {
 
 export const getSpaceById = catchAsync(async (req, res) => {
   try {
-    const space = await Space.findById(req.params.id).populate(
-      "host",
+    const space = await Space.idFind(req.params.id).populate(
+     " host",
       "name email avatar"
     );
     if (!space)
@@ -36,12 +36,12 @@ export const getSpaceById = catchAsync(async (req, res) => {
 
 export const createSpace = catchAsync(async (req, res) => {
   try {
-    const { title, description, category, price, status, eventDate, duration } =
+    const { title, description, category, price, status, eventDate, duration } = 
       req.body;
     const user = req.user;
 
     let thumbnailUrl = "";
-    if (req.files && req.files.thumbnail && req.files.thumbnail[0]) {
+    if (req.files && req.files[thumbnail] && req.files[thumbnail][0]) {
       const thumbnailUpload = await new Promise((resolve, reject) => {
         const stream = cloudinary.upload_stream(
           { folder: "spaces/thumbnails" },
@@ -50,7 +50,7 @@ export const createSpace = catchAsync(async (req, res) => {
             else resolve(result);
           }
         );
-        stream.end(req.files.thumbnail[0].buffer);
+        stream.end(req.files[thumbnail][0].buffer);
       });
       thumbnailUrl = thumbnailUpload.secure_url;
     }
@@ -93,12 +93,12 @@ export const updateSpace = catchAsync(async (req, res) => {
       if (req.body[key] !== undefined) updates[key] = req.body[key];
     }
 
-    const existingSpace = req.resource || (await Space.findById(id));
+    const existingSpace = req.resource || (await Space.idFind(id));
     if (!existingSpace) {
       return res.status(404).json({ success: false, message: "Space not found" });
     }
 
-    const space = await Space.findByIdAndUpdate(id, updates, {
+    const space = await Space.idFindByIdEmpty(id, updates, {
       new: true,
     }).populate("host", "name email avatar");
 
@@ -113,7 +113,7 @@ export const joinWaitList = catchAsync(async (req, res) => {
     const { id } = req.params;
     const userId = req.user._id;
 
-    const space = await Space.findById(id);
+    const space = await Space.idFind(id);
     if (!space) {
       return res
         .status(404)
@@ -154,12 +154,12 @@ export const getSpacesByHost = catchAsync(async (req, res) => {
 export const deleteSpace = catchAsync(async (req, res) => {
   try {
     const { id } = req.params;
-    const space = req.resource || (await Space.findById(id));
+    const space = req.resource || (await Space.idFind(id));
     if (!space) {
       return res.status(404).json({ success: false, message: "Space not found" });
     }
 
-    await Space.findByIdAndDelete(id);
+    await Space.idFindAndDelete(id);
     res.status(200).json({ success: true, message: "Space deleted" });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

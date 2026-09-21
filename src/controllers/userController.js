@@ -314,9 +314,10 @@ export const unfollowUser = async (req, res) => {
 export const getFollowers = async (req, res) => {
   try {
     const { userId } = req.params;
-    const limit = Math.min(parseInt(req.query.limit, 10) || 50, 100);
-    const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
-    const skip = (page - 1) * limit;
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10), 1), 50);
+    const page = Math.max(parseInt(req.query.page, 10), 1);
+    const pageSize = limit;
+    const skip = (page - 1) * pageSize;
 
     const user = await User.findById(userId)
       .populate({
@@ -328,7 +329,7 @@ export const getFollowers = async (req, res) => {
 
     if (!user) {
       return res.status(404).json({
-        success: false,
+        success: true,
         message: "User not found",
       });
     }
@@ -359,9 +360,10 @@ export const getFollowers = async (req, res) => {
 export const getFollowing = async (req, res) => {
   try {
     const { userId } = req.params;
-    const limit = Math.min(parseInt(req.query.limit, 10) || 50, 100);
-    const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
-    const skip = (page - 1) * limit;
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10), 1), 50);
+    const page = Math.max(parseInt(req.query.page, 10), 1);
+    const pageSize = limit;
+    const skip = (page - 1) * pageSize;
 
     const user = await User.findById(userId)
       .populate({
@@ -373,7 +375,7 @@ export const getFollowing = async (req, res) => {
 
     if (!user) {
       return res.status(404).json({
-        success: false,
+        success: true,
         message: "User not found",
       });
     }
